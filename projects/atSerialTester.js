@@ -26,7 +26,7 @@ var cmdAndRespSet = [
   [ ["sys sleep"],  [ ["ok"] ] ],
   [ ["sys reset"], [ ["ok"] ] ],
   [ ["sys eraseFW"], [ ] ],
-  [ ["sys factoryRESET" ], [ ["RN2483"] , ["X25"]     ] ],
+  [ ["sys factoryRESET" ], [ ["RN2483"] ] ],
   [ ["sys set nvm 300" ], [ ["ok"] , ["X25"] ] ],
   [ ["sys set nvm 800" ], [ ["invalid_param"] ] ],
   [ ["sys set pinmode GPIO0" ], [ ["ok"]    ] ],
@@ -90,13 +90,13 @@ var cmdAndRespSet = [
   [ ["mac get sync" ], [ ["34"] ] ],
   [ ["mac get upctr" ], [ ["0"] ] ],
   [ ["mac get dnctr" ], [ ["0"] ] ],
-  [ ["mac get ch freq 0" ], [ ["863000000"] ] ],
+  [ ["mac get ch freq 0" ], [ ["868100000"] ] ],
   [ ["mac get ch dcycle 0" ], [ ["863000000"] ] ],
   [ ["mac get ch drrange 0" ], [ ["863000000"] ] ],
   [ ["mac get ch status 2" ], [ ["863000000"] ] ],
   [ ["radio set bt none" ], [ ["ok"] ] ],
   [ ["radio set mod lora" ], [ ["ok"] ] ],
-  [ ["radio set freq 863000000" ], [ ["ok"] ] ],
+  [ ["radio set freq 868300000" ], [ ["ok"] ] ],
   [ ["radio set pwr 14" ], [ ["ok"] ] ],
   [ ["radio set sf sf7" ], [ ["ok"] ] ],
   [ ["radio set afcbw 125" ], [ ["ok"] ] ],
@@ -106,32 +106,16 @@ var cmdAndRespSet = [
   [ ["radio set prlen 8" ], [ ["ok"] ] ],
   [ ["radio set crc on" ], [ ["ok"] ] ],
   [ ["radio set iqi on" ], [ ["ok"] ] ],
-  [ ["radio set cr 4/7" ], [ ["ok"] ] ],
-  [ ["radio set wdt 2000" ], [ ["ok"] ] ],
+  [ ["radio set cr 4/5" ], [ ["ok"] ] ],
+  [ ["radio set wdt 0" ], [ ["ok"] ] ],
   [ ["radio set sync 12" ], [ ["ok"] ] ],
-  [ ["radio set bw 250" ], [ ["ok"] ] ],
-  [ ["radio tx 48656c6C6F" ], [ ["ok"] ] ],
-  [ ["radio cw off" ], [ ["ok"] ] ]
+  [ ["radio set bw 500" ], [ ["ok"] ] ],
+  [ ["radio tx 6231" ], [ ["ok"] ] ],
+  [ ["radio cw off" ], [ ["ok"] ] ],
+  [ ["radio tx 68656c6c6f"], [ ["ok"] ] ]
 /*  [ ["radio get " ], [ ["ok"] ] ]  [ ["radio rx " ], [ ["ok"] ] ],
     [ ["radio rx " ], [ ["ok"] ] ],*/
-];
-
-/*
-  at.registerLine("sys sleep", function() {
-    var localDuration;
-    console.log("trame détectée");
-    if (modeRandom === false) {
-      localDuration = globalDuration;
-    } else {
-      localDuration = Math.trunc(1000*Math.random());
-    }
-    setTimeout(function() {
-      console.log("envoie de la réponse");
-      at.write("ok\r\n");
-      
-    },localDuration);
-  });
-*/
+  ];
 
   initialiseModuleSerialCom();
 

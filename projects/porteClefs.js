@@ -68,7 +68,7 @@ setWatch(function() {
   setTimeout(function(){pressB14=false;},100);
   toggleFilterB14 = !toggleFilterB14;
   if (toggleFilterB14 === true) {
-    qMsgObj.enqueue("radio tx 48656c6C6F\r\n");
+    qMsgObj.enqueue("radio tx "+convertToHex("hello")+"\r\n");
   }
 }, B14, { repeat: true, edge: "both" });
 
@@ -81,7 +81,7 @@ setWatch(function() {
   setTimeout(function(){pressB13=false;},100);
   toggleFilterB13 = !toggleFilterB13;
   if (toggleFilterB13 === true) {
-    qMsgObj.enqueue('BOUTON_2');
+   qMsgObj.enqueue(convertToHex("radio tx b_2\r\n"));
   }
 }, B13, { repeat: true, edge: "both" });
 
@@ -94,7 +94,7 @@ setWatch(function() {
   setTimeout(function(){pressB3=false;},100);
   toggleFilterB3 = !toggleFilterB3;
   if (toggleFilterB3 === true) {
-    qMsgObj.enqueue('BOUTON_3');
+   qMsgObj.enqueue(convertToHex("radio tx b_3\r\n"));
   }
 }, B3, { repeat: true, edge: "both" });
 
@@ -107,7 +107,7 @@ setWatch(function() {
   setTimeout(function(){pressB4=false;},100);
   toggleFilterB4 = !toggleFilterB4;
   if (toggleFilterB4 === true) {
-    qMsgObj.enqueue('BOUTON_4');
+   qMsgObj.enqueue(convertToHex("radio tx b_4\r\n"));
   }
 }, B4, { repeat: true, edge: "both" });
 
@@ -418,7 +418,7 @@ function LoRaSendAndReceive(commandeAT) {
     moduleBusy = false;
     qMsgObj.emit('ready');
   });
-    
+
 }
 
 /**
@@ -435,32 +435,41 @@ var DEV_EUI     = "0004A30B001A55ED";
 var APP_EUI     = "FEDCBA9876543210";
 var NTWS_KEY    = "1029384756AFBECD5647382910DACFEB";
 var APP_KEY     = "00112233445566778899AABBCCDDEEFF";
-var PWR_IDX     = 14;
-var DR          = "";
-var ADR         = "";
 
 /* Commandes utilisées dans les échanges avec le module. */
-var MODULE_RST_CMD = "sys reset\r\n";
-var MODULE_MACRSTBAND_CMD = "mac reset 868\r\n";
-var MODULE_MACSETAPPEUI_CMD = "mac set appeui "+APP_EUI+"\r\n";
-var MODULE_MACSETNWKSKEY_CMD = "mac set nwkskey "+NTWS_KEY+"\r\n";
-var MODULE_SLEEP_CMD = "sys sleep";
-var MODULE_SENDUNCONF_CMD = "mac tx uncnf 1 ";
-/* 
-var "mac set adr off\r\n";
-var "mac set pwridx 1\r\n";
-var "mac join abp\r\n";
+var RN2483_SYSFACTRST_CDM = "sys factoryRESET\r\n";
+var RN2483_RST_CMD = "sys reset\r\n";
+var RN2483_LORAMODE_CMD = "radio set mod lora\r\n";
+var RN2483_SETFREQ_CMD = "radio set freq 863000000\r\n";
+var RN2483_SETPWR_CMD = "radio set pwr 14\r\n";
+var RN2483_SETSFT_CDM = "radio set sf sf7\r\n";
+var RN2483_SETCRC_CMD = "radio set crc on\r\n";
+var RN2483_SETCR_CMD = "radio set cr 4/5\r\n";
+var RN2483_SETWDT_CMD = "radio set wdt 0\r\n";
+var RN2483_SETSYNC_CMD = "radio set sync 12\r\n";
+var RN2483_SETBW_CMD = "radio set bw 500\r\n";
+var RN2483_SETPAUSE_CMD = "mac pause\r\n";
 
-var "sys get ver\r\n";
-var "sys get vdd\r\n";
-var "sys get hweui\r\n";
-var "mac get dr\r\n";
-var "mac get ch\r\n";
-var "mac get band\r\n";
-var "mac get rxdelay1\r\n";
-var "mac get rxdelay2\r\n";
-var "mac get status\r\n";
-*/
+var RN2483_MACRSTBAND_CMD = "mac reset 868\r\n";
+var RN2483_MACSETAPPEUI_CMD = "mac set appeui "+APP_EUI+"\r\n";
+var RN2483_MACSETNWKSKEY_CMD = "mac set nwkskey "+NTWS_KEY+"\r\n";
+var RN2483_SLEEP_CMD = "sys sleep\r\n";
+var RN2483_SENDUNCONF_CMD = "mac tx uncnf 1 ";
+var RN2483_MACSETADR_CMD = "mac set adr off\r\n";
+var RN2483_MACSETPWIDX_CMD = "mac set pwridx 1\r\n";
+var RN2483_JOINABP_CMD = "mac join abp\r\n";
+
+var RN2483_GETVER_CMD = "sys get ver\r\n";
+var RN2483_GETVDD_CMD = "sys get vdd\r\n";
+var RN2483_GETHWEUI_CMD = "sys get hweui\r\n";
+var RN2483_GETDR_CMD = "mac get dr\r\n";
+var RN2483_GETCH_CMD = "mac get ch\r\n";
+var RN2483_GETBAND_CMD = "mac get band\r\n";
+var RN2483_GETRXD1F_CMD = "mac get rxdelay1\r\n";
+var RN2483_GETRXD2_CMD = "mac get rxdelay2\r\n";
+var RN2483_GETSTATUS_CMD = "mac get status\r\n";
+
+var RN2483_SAVECONF_CMD = "\r\n";
 
 /**
  * Cette fonction met le module en état de basse consommation électrique.
@@ -506,16 +515,34 @@ function initRn2483() {
     /* Réveille et reset le module puis autorise la conversation avec lui*/
     wakeUpRn2483();
   
-    qMsgObj.enqueue(MODULE_RST_CMD);
+    qMsgObj.enqueue(RN2483_RST_CMD);
     /* Spécifie la bande des 868 MHz */
-    qMsgObj.enqueue(MODULE_MACRSTBAND_CMD);
-    /* Déclare la clef réseau permettant de faire l'OTAA */
-    qMsgObj.enqueue(MODULE_MACSETNWKSKEY_CMD);
-    /* Sauve la configuration */
-    
-    /* Fait le join sur le réseau */
-    
+ 
   
+    qMsgObj.enqueue(RN2483_SYSFACTRST_CDM);
+    qMsgObj.enqueue(RN2483_RST_CMD);
+    qMsgObj.enqueue(RN2483_LORAMODE_CMD);
+    qMsgObj.enqueue(RN2483_SETFREQ_CMD);
+    qMsgObj.enqueue(RN2483_SETPWR_CMD);
+    qMsgObj.enqueue(RN2483_SETSFT_CDM);
+    qMsgObj.enqueue(RN2483_SETCRC_CMD);
+    qMsgObj.enqueue(RN2483_SETCR_CMD);
+    qMsgObj.enqueue(RN2483_SETWDT_CMD);
+    qMsgObj.enqueue(RN2483_SETSYNC_CMD);
+    qMsgObj.enqueue(RN2483_SETBW_CMD);
+    qMsgObj.enqueue(RN2483_SETPAUSE_CMD);
+    
+    qMsgObj.enqueue(RN2483_MACRSTBAND_CMD);
+    /* Déclare la clef réseau permettant de faire l'OTAA */
+    qMsgObj.enqueue(RN2483_MACSETNWKSKEY_CMD);
+    /* Sauve la configuration */ 
+
+    /* Déclare la clef réseau permettant de faire l'OTAA */
+
+    /* Sauve la configuration */
+  
+  
+    /* Fait le join sur le réseau */
   
     /* Indique que le module est configuré */
     moduleLoRaConfigured = true;
