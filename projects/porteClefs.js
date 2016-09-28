@@ -68,7 +68,8 @@ setWatch(function() {
   setTimeout(function(){pressB14=false;},100);
   toggleFilterB14 = !toggleFilterB14;
   if (toggleFilterB14 === true) {
-    qMsgObj.enqueue("radio tx "+convertToHex("hello")+"\r\n");
+    qMsgObj.enqueue("radio tx " + convertToHex("hello") + "\r\n");
+    //qMsgObj.enqueue(RN2483_MACSETNWKSKEY_CMD);
   }
 }, B14, { repeat: true, edge: "both" });
 
@@ -403,19 +404,30 @@ function LoRaSendAndReceive(commandeAT) {
     if (d===undefined) { // we timed out!
       logEvent(debug, "commandeAT en timeout : " + commandeAT);
       flashLed(LED_ROUGE, 50, 300);
+      // On suppose que le time out vient d'une indisponibilité du réseau. On garde le message dans le queue pour retenter un envoi. Pour l'instant le renvoi est retenté tout de suite (à améliorer dans une prochaine version).
     }
     
     if (d === "ok") {
-      logEvent(debug,"Réponse module : ok");
+      logEvent(debug,"Réponse du rn2483 : ok");
       flashLed(LED_VERTE, 50, 300);
       qMsg.dequeue();
     }
     
-    if (d !== "ok" && d !== undefined) {
+    if (d === "invalid_param") {
+       logEvent(debug, "Réponse du rn2483 : " + d );
+       logEvent(debug, "Message mis à la poubelle");
+       // Le message envoyé ne fonctionnera jamais, donc on le trash
+       qMsg.dequeue();
+    }
+    
+    if (d !== "ok" && d !== undefined && d !== "invalid_param") {
        logEvent(debug, "Réponse du rn2483 : " + d);
+      // Donnée de retour : valeur métier ou message d'erreur. Pas moyen de les distinguer. Dans ce cas on trash le message envoyé.
+       qMsg.dequeue();
     }
     
     moduleBusy = false;
+    // Dépiler le prochain message (ou le meme s'il n'est pas parti.
     qMsgObj.emit('ready');
   });
 
@@ -517,7 +529,7 @@ function initRn2483() {
   
     qMsgObj.enqueue(RN2483_RST_CMD);
     /* Spécifie la bande des 868 MHz */
- 
+ /*
   
     qMsgObj.enqueue(RN2483_SYSFACTRST_CDM);
     qMsgObj.enqueue(RN2483_RST_CMD);
@@ -533,8 +545,11 @@ function initRn2483() {
     qMsgObj.enqueue(RN2483_SETPAUSE_CMD);
     
     qMsgObj.enqueue(RN2483_MACRSTBAND_CMD);
+    
+*/
     /* Déclare la clef réseau permettant de faire l'OTAA */
-    qMsgObj.enqueue(RN2483_MACSETNWKSKEY_CMD);
+//    qMsgObj.enqueue(RN2483_MACSETNWKSKEY_CMD);
+  
     /* Sauve la configuration */ 
 
     /* Déclare la clef réseau permettant de faire l'OTAA */
