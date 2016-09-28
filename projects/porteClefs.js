@@ -443,12 +443,11 @@ function LoRaSendAndReceive(commandeAT) {
  * - 
  *
  */
-var DEV_EUI     = "0004A30B001A55ED";
-var APP_EUI     = "FEDCBA9876543210";
-var NTWS_KEY    = "1029384756AFBECD5647382910DACFEB";
-var APP_KEY     = "00112233445566778899AABBCCDDEEFF";
+var DEV_EUI = "008000000000A00F";
+var APP_EUI = "00800000842DAC65";
+var APP_KEY = "5E2E3C5948E3916B75723943D8CA4963";
 
-/* Commandes utilisées dans les échanges avec le module. */
+/* Commandes pouvant etre utilisées dans les échanges avec le RN2483. */
 var RN2483_SYSFACTRST_CDM = "sys factoryRESET\r\n";
 var RN2483_RST_CMD = "sys reset\r\n";
 var RN2483_LORAMODE_CMD = "radio set mod lora\r\n";
@@ -460,16 +459,20 @@ var RN2483_SETCR_CMD = "radio set cr 4/5\r\n";
 var RN2483_SETWDT_CMD = "radio set wdt 0\r\n";
 var RN2483_SETSYNC_CMD = "radio set sync 12\r\n";
 var RN2483_SETBW_CMD = "radio set bw 500\r\n";
-var RN2483_SETPAUSE_CMD = "mac pause\r\n";
 
+var RN2483_SETPAUSE_CMD = "mac pause\r\n";
 var RN2483_MACRSTBAND_CMD = "mac reset 868\r\n";
-var RN2483_MACSETAPPEUI_CMD = "mac set appeui "+APP_EUI+"\r\n";
-var RN2483_MACSETNWKSKEY_CMD = "mac set nwkskey "+NTWS_KEY+"\r\n";
+var RN2483_SETDEVEUI_CMD = "mac set deveui " + DEV_EUI + "\r\n";
+var RN2483_MACSETAPPEUI_CMD = "mac set appeui "+ APP_EUI+"\r\n";
+var RN2483_SETAPPKEY_CMD = "mac set appkey " + APP_KEY + "\r\n";
+//var RN2483_MACSETNWKSKEY_CMD = "mac set nwkskey "+NTWS_KEY+"\r\n";
 var RN2483_SLEEP_CMD = "sys sleep\r\n";
 var RN2483_SENDUNCONF_CMD = "mac tx uncnf 1 ";
 var RN2483_MACSETADR_CMD = "mac set adr off\r\n";
+var RN2483_MACSAVE_CMD = "mac save\r\n";
 var RN2483_MACSETPWIDX_CMD = "mac set pwridx 1\r\n";
-var RN2483_JOINABP_CMD = "mac join abp\r\n";
+var RN2483_JOINOTAA_CMD = "mac join otaa\r\n";
+//var RN2483_JOINABP_CMD = "mac join abp\r\n";
 
 var RN2483_GETVER_CMD = "sys get ver\r\n";
 var RN2483_GETVDD_CMD = "sys get vdd\r\n";
@@ -480,8 +483,6 @@ var RN2483_GETBAND_CMD = "mac get band\r\n";
 var RN2483_GETRXD1F_CMD = "mac get rxdelay1\r\n";
 var RN2483_GETRXD2_CMD = "mac get rxdelay2\r\n";
 var RN2483_GETSTATUS_CMD = "mac get status\r\n";
-
-var RN2483_SAVECONF_CMD = "\r\n";
 
 /**
  * Cette fonction met le module en état de basse consommation électrique.
@@ -527,41 +528,22 @@ function initRn2483() {
     /* Réveille et reset le module puis autorise la conversation avec lui*/
     wakeUpRn2483();
   
-    qMsgObj.enqueue(RN2483_RST_CMD);
-    /* Spécifie la bande des 868 MHz */
- /*
-  
+    /* Effectue unz réinitialisation usine  */
     qMsgObj.enqueue(RN2483_SYSFACTRST_CDM);
-    qMsgObj.enqueue(RN2483_RST_CMD);
-    qMsgObj.enqueue(RN2483_LORAMODE_CMD);
-    qMsgObj.enqueue(RN2483_SETFREQ_CMD);
-    qMsgObj.enqueue(RN2483_SETPWR_CMD);
-    qMsgObj.enqueue(RN2483_SETSFT_CDM);
-    qMsgObj.enqueue(RN2483_SETCRC_CMD);
-    qMsgObj.enqueue(RN2483_SETCR_CMD);
-    qMsgObj.enqueue(RN2483_SETWDT_CMD);
-    qMsgObj.enqueue(RN2483_SETSYNC_CMD);
-    qMsgObj.enqueue(RN2483_SETBW_CMD);
-    qMsgObj.enqueue(RN2483_SETPAUSE_CMD);
-    
-    qMsgObj.enqueue(RN2483_MACRSTBAND_CMD);
-    
-*/
-    /* Déclare la clef réseau permettant de faire l'OTAA */
-//    qMsgObj.enqueue(RN2483_MACSETNWKSKEY_CMD);
   
-    /* Sauve la configuration */ 
-
-    /* Déclare la clef réseau permettant de faire l'OTAA */
+    /* Déclare les paramètres permettant de faire l'OTAA */
+    qMsgObj.enqueue(RN2483_SETDEVEUI_CMD);
+    qMsgObj.enqueue(RN2483_MACSETAPPEUI_CMD);
+    qMsgObj.enqueue(RN2483_SETAPPKEY_CMD);
 
     /* Sauve la configuration */
-  
+     qMsgObj.enqueue(RN2483_MACSAVE_CMD);
   
     /* Fait le join sur le réseau */
+    qMsgObj.enqueue(RN2483_JOINOTAA_CMD);
   
     /* Indique que le module est configuré */
     moduleLoRaConfigured = true;
-
 }
 
 /**
