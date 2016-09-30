@@ -362,10 +362,12 @@ function Queue(worker) {
     logEvent(debug, "Entrée dans autodequeue");
     var item = this.peek();
     if (item !== undefined) {
+      logEvent(debug, "Une commande est à envoyer");
       if (moduleBusy === false) {
+        logEvent(debug, "Le module est libre");
         theWorker(item);
       } else {
-        // queueObj.emit('data');
+        logEvent(debug, "Le module est occupé : Attendre");
       }
     }
   };
@@ -443,9 +445,9 @@ function LoRaSendAndReceive(commandeAT) {
  * - 
  *
  */
-var DEV_EUI = "008000000000A00F";
-var APP_EUI = "00800000842DAC65";
-var APP_KEY = "5E2E3C5948E3916B75723943D8CA4963";
+var DEV_EUI = "0004A30B001A6946";
+var APP_EUI = "6D725A02F383A69B";
+var APP_KEY = "D2851A6CAA6739B35A42048FE2886AB2";
 
 /* Commandes pouvant etre utilisées dans les échanges avec le RN2483. */
 var RN2483_SYSFACTRST_CDM = "sys factoryRESET\r\n";
