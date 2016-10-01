@@ -23,7 +23,7 @@ devaddr="0000000"
 device="nodes/"+devaddr
 
 def picpu():
-  msg="aa"
+  msg="AABBCC"
   return msg
 
 def send(data):
@@ -43,15 +43,14 @@ time.sleep(1)
 
 if writeconfig is 1:
   time.sleep(1)
+  send("mac set deveui 0004A30B001A6946")
   send("mac set appeui 6D725A02F383A69B")
   send("mac set appkey D2851A6CAA6739B35A42048FE2886AB2")
   send("mac save")
-  time.sleep(60)
+  time.sleep(5)
 
 send("mac join otaa")
-time.sleep(20)
-send("mac join otaa")
-time.sleep(20)
+time.sleep(60)
 
 while True:
   ## maybe add cputmp here on a pi

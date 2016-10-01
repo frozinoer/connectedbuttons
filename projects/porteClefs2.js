@@ -68,7 +68,8 @@ setWatch(function() {
   setTimeout(function(){pressB14=false;},100);
   toggleFilterB14 = !toggleFilterB14;
   if (toggleFilterB14 === true) {
-    qMsgObj.enqueue(RN2483_SENDUNCONF_CMD + convertToHex("BT1") + "\r\n");
+    qMsgObj.enqueue("radio tx " + convertToHex("hello") + "\r\n");
+    //qMsgObj.enqueue(RN2483_MACSETNWKSKEY_CMD);
   }
 }, B14, { repeat: true, edge: "both" });
 
@@ -81,7 +82,7 @@ setWatch(function() {
   setTimeout(function(){pressB13=false;},100);
   toggleFilterB13 = !toggleFilterB13;
   if (toggleFilterB13 === true) {
-   qMsgObj.enqueue(RN2483_SENDUNCONF_CMD + convertToHex("BT2") + "\r\n");
+   qMsgObj.enqueue(convertToHex("radio tx b_2\r\n"));
   }
 }, B13, { repeat: true, edge: "both" });
 
@@ -94,7 +95,7 @@ setWatch(function() {
   setTimeout(function(){pressB3=false;},100);
   toggleFilterB3 = !toggleFilterB3;
   if (toggleFilterB3 === true) {
-   qMsgObj.enqueue(RN2483_SENDUNCONF_CMD + convertToHex("BT3") + "\r\n");
+   qMsgObj.enqueue(convertToHex("radio tx b_3\r\n"));
   }
 }, B3, { repeat: true, edge: "both" });
 
@@ -107,7 +108,7 @@ setWatch(function() {
   setTimeout(function(){pressB4=false;},100);
   toggleFilterB4 = !toggleFilterB4;
   if (toggleFilterB4 === true) {
-   qMsgObj.enqueue(RN2483_SENDUNCONF_CMD + convertToHex("BT4") + "\r\n");
+   qMsgObj.enqueue(convertToHex("radio tx b_4\r\n"));
   }
 }, B4, { repeat: true, edge: "both" });
 
@@ -261,7 +262,7 @@ var SERIAL_OPTIONS = {
  * Initialise la ligne série
  */
 function initialiseModuleSerialCom() {
-    //logEvent(debug, "Entrée dans initialiseModuleSerialCom");
+    logEvent(debug, "Entrée dans initialiseModuleSerialCom");
     SERIAL.setup(SERIAL_BAUDRATE, SERIAL_OPTIONS);
 }
 
@@ -361,15 +362,11 @@ function Queue(worker) {
     logEvent(debug, "Entrée dans autodequeue");
     var item = this.peek();
     if (item !== undefined) {
-      logEvent(debug, "Une commande est à envoyer");
       if (moduleBusy === false) {
-        logEvent(debug, "Le module est libre");
         theWorker(item);
       } else {
-        logEvent(debug, "Le module est occupé : Attendre");
+        // queueObj.emit('data');
       }
-    } else {
-      logEvent(debug,"La queue est vide");
     }
   };
 }
@@ -443,10 +440,12 @@ function LoRaSendAndReceive(commandeAT) {
 /* Paramètres LoRa permettant de réaliser le join OTAA
  * - advaddr n'est pas déclarée car mise à jour par le réseau lors de l'OTAA
  * - DEV_EUI n'est pas initialisé car on utilise celui de Microchip (mis en usine)
+ * - 
+ *
  */
-var DEV_EUI = "0004A30B001A6946";
-var APP_EUI = "6D725A02F383A69B";
-var APP_KEY = "D2851A6CAA6739B35A42048FE2886AB2";
+var DEV_EUI = "008000000000A00F";
+var APP_EUI = "00800000842DAC65";
+var APP_KEY = "5E2E3C5948E3916B75723943D8CA4963";
 
 /* Commandes pouvant etre utilisées dans les échanges avec le RN2483. */
 var RN2483_SYSFACTRST_CDM = "sys factoryRESET\r\n";
@@ -495,9 +494,9 @@ function sleepRn2483() {
 }
 
 /**
- * Cette fonction réveille le module (qui est en mode Stop) et le met en état "pret à recevoir des commandes".
+ * Cette fonction réveille le module et le met en état "pret à recevoir des commandes".
  * Le break met la ligne tx de la sortie série à 0 prendant le temps correspondant à l'émission de 2 octets en vitesse normale. Ainsi, si le baudrate est de 57600, le temps d'émission de 20 bits est de 20/57600 secondes, soit 20000/57600 ms (moins d'1 ms). Dans ce cas on met la durée du break à 1ms. A la fin du break la ligne série doit être reconfigurée (digitalWrite détruit la configuration de la ligne série).
- Suite au break, on remet la ligne série en fonctionnement et on peu déclarer le module pret à communiquer. 
+ Suite au break, on remet la ligne série en fonctionnement et on peu déclarer le module pret à communiquer.
  * 
  */
 function wakeUpRn2483() {
@@ -508,26 +507,37 @@ function wakeUpRn2483() {
   
     setTimeout(function() {
       /* Reconfigure la ligne série (ça fait aussi fait remonter la ligne tx à 1) */
-      initialiseModuleSerialCom();
+      digitalWrite(SERIAL_PINS.tx, 1);
+      //initialiseModuleSerialCom();
       /* Indique que le module est pret à communiquer */
-      moduleBusy = false;
+      //moduleBusy = false;
       /* Démarre le dépilage de la queue (concernant les messages qui y ont été placés quand le module (non initialisé) était donc busy */
-      qMsgObj.emit('ready');
+      //qMsgObj.emit('ready');
       
     }, 1);
 }
 
 /**
- * Initialise le module RN2483 pour le rendre pret à recevoir des commande d'envoi et de réception LoRa. 
- Le module doit avoir suivi une procédure complete de réinitialisation avant de passe dans cette routine.
- A la sortie de cette routine, le module est dans l'état configuré et non busy. La ligne série associée est également initialisée. L'indicateur "moduleLoRaConfigured" indique si le module est bien configuré.
+ * Initialise le module RN2483 pour le rendre pret à recevoir des commande d'envoi et de réception LoRa. A la sortie de cette routine, le module est dans l'état configuré et non busy. La ligne série associée est également initialisée. L'indicateur "moduleLoRaConfigured" indique si le module est bien configuré.
  */
 var moduleLoRaConfigured;
 
 function initRn2483() {
   
     logEvent(debug,"Entrée dans iniRn2483");
- 
+  
+    /* Réveille et reset le module puis autorise la conversation avec lui*/
+    //wakeUpRn2483();
+  
+    initialiseModuleSerialCom();
+    //Indique que le module est pret à communiquer */
+     moduleBusy = false;
+      /* Démarre le dépilage de la queue (concernant les messages qui y ont été placés quand le module (non initialisé) était donc busy */
+      //qMsgObj.emit('ready');
+  
+    /* Effectue unz réinitialisation usine  */
+    qMsgObj.enqueue(RN2483_SYSFACTRST_CDM);
+  
     /* Déclare les paramètres permettant de faire l'OTAA */
     qMsgObj.enqueue(RN2483_SETDEVEUI_CMD);
     qMsgObj.enqueue(RN2483_MACSETAPPEUI_CMD);
@@ -544,7 +554,7 @@ function initRn2483() {
 }
 
 /**
- * Cette fonction envoie des messages de test au backend.
+ * 
  */
 function testCommunicationWithBackEnd() {
     /* Envoie le message de test */
@@ -571,19 +581,12 @@ function checkBattery() {
 /* Pour une future version */
 
 
-
-
 /*********************************************************************************************
  *********************************************************************************************
  * Corps principal de l'application
  * 
  */
-
-
 var deviceState = "USINE";
-
-initialiseModuleSerialCom();
-
 
 function onInit() {
   
@@ -597,27 +600,8 @@ function onInit() {
     turnOffBuzzer();
     turnOffLed(LED_ROUGE);
     turnOffLed(LED_VERTE);
-
-    digitalWrite(A3,true);
-    digitalWrite(A2,true);
-  
-    initialiseModuleSerialCom();
-  
-    digitalWrite(B10,true);
-    logEvent(debug,"Attend avant reset");
-    setTimeout(function() {
-      logEvent(debug,"Mets RTS à 0");
-      digitalWrite(B10, false);
-      setTimeout(function() {
-        logEvent(debug,"Mets RTS à 1");
-        digitalWrite(B10, true);
-        setTimeout(function() {
-          logEvent(info, "System started");
-          moduleBusy = false;
-          initRn2483();
-        }, 4000);
-      }, 500); 
-    }, 3000);
+    
+    initRn2483();
   
     logEvent(debug, "Synchronous job ended");
 }
