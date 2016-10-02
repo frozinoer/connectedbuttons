@@ -20,8 +20,10 @@ Codes d'erreur
  */
 
 /*********************************************************************************************
- * Imports 
+ * Imports
  */
+
+// Bien veiller à ce que le module AT soit dans le dossier "modules"
 var at = require("AT").connect(Serial2);
 
 /*********************************************************************************************
@@ -122,7 +124,7 @@ function getButtonName(button) {
     logEvent(debug, pin);
     if (pin === "B14") { buttonName = "BOUTON_1";}
     if (pin === "B13") { buttonName = "BOUTON_2";}
-    if (pin === "B3" ) { buttonName = "BOUTON_3";}
+    if (pin === "B15" ) { buttonName = "BOUTON_3";}
     if (pin === "B4" ) { buttonName = "BOUTON_4";}
     logEvent(debug, "buttonName : " + buttonName);
     return buttonName;
@@ -261,7 +263,7 @@ var SERIAL_OPTIONS = {
  * Initialise la ligne série
  */
 function initialiseModuleSerialCom() {
-    //logEvent(debug, "Entrée dans initialiseModuleSerialCom");
+    logEvent(debug,"Entrée dans initialiseModuleSerialCom");
     SERIAL.setup(SERIAL_BAUDRATE, SERIAL_OPTIONS);
 }
 
@@ -408,17 +410,21 @@ function LoRaSendAndReceive(commandeAT) {
       logEvent(debug, "commandeAT en timeout : " + commandeAT);
       flashLed(LED_ROUGE, 50, 300);
       // On suppose que le time out vient d'une indisponibilité du réseau. On garde le message dans le queue pour retenter un envoi. Pour l'instant le renvoi est retenté tout de suite (à améliorer dans une prochaine version).
-    }
-    
-    if (d === "ok") {
+    } else if (d === "ok") {
       // Le module a accepté la commande. 
       logEvent(debug,"Réponse du rn2483 : ok");
+      logEvent(debug, "commandAT in callback : " + commandeAT);
+      if (commandeAT.slice(0,14) === "mac tx uncnf 1") {
+        logEvent(debug,"send message detected");
+        return cb;
+      }
       flashLed(LED_VERTE, 50, 300);
       qMsg.dequeue();
     } else if (d === "mac_tx_ok") {
       // Réponse ack du serveur obtenue: on est sur que le message a été reçu par la borne LoRa
       logEvent(debug,"Réponse du rn2483 : mac_tx_ok");
       flashLed(LED_VERTE, 80, 300);
+       qMsg.dequeue();
     } else if (d === "busy") {
       // On laisse le message dans la queue et on attend le prochain tour
       logEvent(debug,"Réponse du rn2483 : module busy");
@@ -592,9 +598,6 @@ function checkBattery() {
 
 
 var deviceState = "USINE";
-
-initialiseModuleSerialCom();
-
 
 function onInit() {
   
