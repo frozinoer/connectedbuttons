@@ -37,14 +37,14 @@ var at = require("AT").connect(Serial2);
  * le bouton 4 est connecté sur B4
  * le buzzer est connecté sur B5
  */
-var LED_ROUGE = B1;
+var LED_ROUGE = B5;
 LED_ROUGE.mode("output");
-var LED_VERTE = B15;
+var LED_VERTE = B1;
 LED_VERTE.mode("output");
-var LED_ON  = false;
-var LED_OFF = true;
+var LED_ON  = true;
+var LED_OFF = false;
 
-var BUZZER   = B5;
+var BUZZER   = B3;
 BUZZER.mode("output");
 var BUZZER_ON  = false;
 var BUZZER_OFF = true;
@@ -54,7 +54,7 @@ var BOUTON_1  = B14;
 pinMode(BOUTON_1, 'input_pulldown');
 var BOUTON_2  = B13;
 pinMode(BOUTON_2, 'input_pulldown');
-var BOUTON_3  = B3;
+var BOUTON_3  = B15;
 pinMode(BOUTON_3, 'input_pulldown');
 var BOUTON_4  = B4;
 pinMode(BOUTON_4, 'input_pulldown');
@@ -86,17 +86,17 @@ setWatch(function() {
 }, B13, { repeat: true, edge: "both" });
 
 /* BOUTON_3 Button action detection */
-var toggleFilterB3 = false;
-var pressB3 = false;
+var toggleFilterB15 = false;
+var pressB15 = false;
 setWatch(function() {
-  if (pressB3) return;
-  pressB3=true;
-  setTimeout(function(){pressB3=false;},100);
-  toggleFilterB3 = !toggleFilterB3;
-  if (toggleFilterB3 === true) {
+  if (pressB15) return;
+  pressB15=true;
+  setTimeout(function(){pressB15=false;},100);
+  toggleFilterB15 = !toggleFilterB15;
+  if (toggleFilterB15 === true) {
    qMsgObj.enqueue(RN2483_SENDUNCONF_CMD + convertToHex("BT3") + "\r\n");
   }
-}, B3, { repeat: true, edge: "both" });
+}, B15, { repeat: true, edge: "both" });
 
 /* BOUTON_4 Button action detection */
 var toggleFilterB4 = false;
@@ -411,19 +411,28 @@ function LoRaSendAndReceive(commandeAT) {
     }
     
     if (d === "ok") {
+      // Le module a accepté la commande. 
       logEvent(debug,"Réponse du rn2483 : ok");
       flashLed(LED_VERTE, 50, 300);
       qMsg.dequeue();
-    }
-    
-    if (d === "invalid_param") {
+    } else if (d === "mac_tx_ok") {
+      // Réponse ack du serveur obtenue: on est sur que le message a été reçu par la borne LoRa
+      logEvent(debug,"Réponse du rn2483 : mac_tx_ok");
+      flashLed(LED_VERTE, 80, 300);
+    } else if (d === "busy") {
+      // On laisse le message dans la queue et on attend le prochain tour
+      logEvent(debug,"Réponse du rn2483 : module busy");
+    } else if (d === "no_free_ch") {
+      logEvent(debug,"Réponse du rn2483 : no free channel");
+      // On laisse le message dans la queue et on attend que le canal se libere. Ca peut prendre du temps. On attend le prochain tour (pour cette prémière itération)
+      // Il faudra mettre un réveil avec horloge sinon adieu la pile !!
+    } else if (d === "invalid_param") {
+       // Le message envoyé ne fonctionnera jamais, donc on le trash
        logEvent(debug, "Réponse du rn2483 : " + d );
        logEvent(debug, "Message mis à la poubelle");
-       // Le message envoyé ne fonctionnera jamais, donc on le trash
+       flashLed(LED_ROUGE, 50, 300);
        qMsg.dequeue();
-    }
-    
-    if (d !== "ok" && d !== undefined && d !== "invalid_param") {
+    } else {
        logEvent(debug, "Réponse du rn2483 : " + d);
       // Donnée de retour : valeur métier ou message d'erreur. Pas moyen de les distinguer. Dans ce cas on trash le message envoyé.
        qMsg.dequeue();
@@ -444,6 +453,8 @@ function LoRaSendAndReceive(commandeAT) {
  * - advaddr n'est pas déclarée car mise à jour par le réseau lors de l'OTAA
  * - DEV_EUI n'est pas initialisé car on utilise celui de Microchip (mis en usine)
  */
+
+/* Orange */
 var DEV_EUI = "0004A30B001A6946";
 var APP_EUI = "6D725A02F383A69B";
 var APP_KEY = "D2851A6CAA6739B35A42048FE2886AB2";
@@ -594,6 +605,7 @@ function onInit() {
     LOGGING_LEVEL=debug;
     initLogger();
     
+    logEvent(info, "************* Démarrage **************");
     turnOffBuzzer();
     turnOffLed(LED_ROUGE);
     turnOffLed(LED_VERTE);
@@ -606,10 +618,10 @@ function onInit() {
     digitalWrite(B10,true);
     logEvent(debug,"Attend avant reset");
     setTimeout(function() {
-      logEvent(debug,"Mets RTS à 0");
+      logEvent(debug,"Mets RST à 0");
       digitalWrite(B10, false);
       setTimeout(function() {
-        logEvent(debug,"Mets RTS à 1");
+        logEvent(debug,"Mets RST à 1");
         digitalWrite(B10, true);
         setTimeout(function() {
           logEvent(info, "System started");
