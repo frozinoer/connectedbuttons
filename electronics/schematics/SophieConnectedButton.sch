@@ -29,18 +29,19 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
+LIBS:SophieConnectedButton-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Title "Sophie Connected buttons"
+Date "2016-10-12"
+Rev "1.0"
+Comp "BNP Paribas"
+Comment1 "Mocked-up on a breadboard"
 Comment2 ""
-Comment3 ""
+Comment3 "Designed by OCTO"
 Comment4 ""
 $EndDescr
 $Comp
