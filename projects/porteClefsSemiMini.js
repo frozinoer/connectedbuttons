@@ -2,16 +2,7 @@
  * Logiciel écrit par Arnaud-François Fausse (c) 2016.
  * 
  * Ce logiciel est un produit dérivé du framework Espruino A-F. Fausse (c) 2016
- * A la mise sous tension (mise en place de la pile), le logiciel vérifie si le porte clef dispose des clefs LoRa permettant de communiquer. Il est initialement dans l'état "usine".
- * Si le porte-clefs ne sont pas présentes, alors le logiciel tente un enregistrement OTAA. En cas de succès, la led verte clignote pendant 5 secondes. Le porte-clef passe dans l'état "enregistré".
- * En cas d'échec, la led rouge clignote 5 secondes et le porte-clefs se met en état sommeil. Il se réveillera par la pression d'un des boutons. Dans ce cas, il vérifiera de nouveau si les clefs sont présentes et sinon, tentera de nouveau un OTAA. Le porte-clef reste dans l'état "usine".
- * Dans le cas du succès de l'enregistrement OTAA, en entrée de l'état "enregistré", le porte-clefs envoie un message de test de bonne communication avec le back-end. Si la communication fonctionne bien, alors le message "OK" est renvoyé en downlink (c'est le back-end qui crée le message et l'envoie pour retour). Le back-end doit renvoyer la réponse en moins de 500 ms. Si le OK arrive bien, le porte-clefs passe dans l'état "communicationPossible". Il se met en sommeil.
- * Si le "OK" n'arrive pas alors le porte-clefs se met en sommeil et se réveillera à la prochaine pression sur un bouton. Il reste dans l'état "enregistré". La led rouge clignote rapidement 10 fois à l'échec de réception du "OK".
  * 
- * Une fois le porte-clef passé dans l'état "communicationPossible", se met en sommeil et attend la prochaine pression d'un bouton.
- * A la pression d'un bouton, le porte-clefs se réveille : d'abord le microcontroleur hote (Espruino), puis le module radio RN2883, réveillé à son tour par l'Espruino. Pour réveiller le module radio, l'hote envoie une break.
- * 
- * Le porte-clefs surveille la tension de la batterie à chaque pression de bouton. En cas de pile faible, il déclenche un bip et un clignotement très rapide de la led rouge.
 
 Codes d'erreur
   0 : Succès de la commande
@@ -247,7 +238,7 @@ function logEvent(logLevel, event) {
  */
 
 /** 
- * La ligne série Serial2 communique avec le module LoRa
+ * La ligne série Serial1 communique avec le module LoRa
  */
 var SERIAL = Serial1;
 var SERIAL_BAUDRATE = 57600;
