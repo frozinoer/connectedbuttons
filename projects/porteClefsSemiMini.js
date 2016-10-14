@@ -3,11 +3,6 @@
  * 
  * Ce logiciel est un produit dérivé du framework Espruino A-F. Fausse (c) 2016
  * 
-
-Codes d'erreur
-  0 : Succès de la commande
- -1 : Tentative d'envoi de message dans un état différent de COM_POSSIBLE
- -2 : 
  */
 
 /*********************************************************************************************
@@ -30,9 +25,9 @@ var at = require("AT").connect(Serial1);
  * le bouton 4 est connecté sur B4
  * le buzzer est connecté sur B5
  */
-var LED_ROUGE = B5;
+var LED_ROUGE = B1;
 LED_ROUGE.mode("output");
-var LED_VERTE = B1;
+var LED_VERTE = B5;
 LED_VERTE.mode("output");
 var LED_ON  = true;
 var LED_OFF = false;
@@ -127,6 +122,7 @@ function getButtonName(button) {
  * Allume une LED 
  */
 function turnOnLed(color) {
+    logEvent(debug, "Turn ON LED : " + color.getInfo().port + color.getInfo().num );
     digitalWrite(color, LED_ON);
 }
 
@@ -134,6 +130,7 @@ function turnOnLed(color) {
  * Eteint une LED 
  */
 function turnOffLed(color) {
+    logEvent(debug, "Turn OFF LED : " + color.getInfo().port + color.getInfo().num );
     digitalWrite(color, LED_OFF);
 }
 
@@ -141,7 +138,7 @@ function turnOffLed(color) {
  * Fait clignoter la LED de couleur "color" avec une période de "period" ms et pendant une durée de "duration" ms. Le nombre de clignotements est la durée divisée par la période divisée par 2
  */
 function flashLed(color, period, duration) {
-    logEvent(debug, "Flash LED : " + color.getInfo().port + color.getInfo().num );
+    
     var flasher = setInterval(function(c) {
                    var ledStatus = digitalRead(c);
                    ledStatus = !ledStatus;
@@ -149,7 +146,7 @@ function flashLed(color, period, duration) {
                   }, period, color);
     setTimeout(function() {
       clearInterval(flasher);
-      logEvent(debug, "Led turned off : " + color.getInfo().port + color.getInfo().num );
+      logEvent(debug, "Flash LED : " + color.getInfo().port + color.getInfo().num );
       turnOffLed(color);
     }, duration);
 }
@@ -405,7 +402,7 @@ function LoRaSendAndReceive(commandeAT) {
       // On suppose que le time out vient d'une indisponibilité du réseau. On garde le message dans le queue pour retenter un envoi. Pour l'instant le renvoi est retenté tout de suite (à améliorer dans une prochaine version).
     } else if (d === "ok") {
       // Le module a accepté la commande. 
-      logEvent(debug,"Réponse du rn2483 : ok");
+      logEvent(debug,"Réponse du rn2483 : ok pour : " + commandeAT);
       logEvent(debug, "commandAT in callback : " + commandeAT);
       if (commandeAT.slice(0,14) === "mac tx uncnf 1") {
         logEvent(debug,"send message detected");
@@ -420,21 +417,21 @@ function LoRaSendAndReceive(commandeAT) {
        qMsg.dequeue();
     } else if (d === "busy") {
       // On laisse le message dans la queue et on attend le prochain tour
-      logEvent(debug,"Réponse du rn2483 : module busy");
+      logEvent(debug,"Réponse du rn2483 : module busy pour : " + commandeAT);
     } else if (d === "no_free_ch") {
-      logEvent(debug,"Réponse du rn2483 : no free channel");
+      logEvent(debug,"Réponse du rn2483 : no free channel pour : " + commandeAT);
       // On laisse le message dans la queue et on attend que le canal se libere. Ca peut prendre du temps. On attend le prochain tour (pour cette prémière itération)
       // Il faudra mettre un réveil avec horloge sinon adieu la pile !!
     } else if (d === "invalid_param") {
        // Le message envoyé ne fonctionnera jamais, donc on le trash
-       logEvent(debug, "Réponse du rn2483 : " + d );
+       logEvent(debug, "Réponse du rn2483 : " + d + " pour : " + commandeAT);
        logEvent(debug, "Message mis à la poubelle");
        flashLed(LED_ROUGE, 50, 300);
        qMsg.dequeue();
     } else {
-       logEvent(debug, "Réponse du rn2483 : " + d);
+      logEvent(debug, "Réponse du rn2483 : " + d  + " pour : " + commandeAT);
       // Donnée de retour : valeur métier ou message d'erreur. Pas moyen de les distinguer. Dans ce cas on trash le message envoyé.
-       qMsg.dequeue();
+      qMsg.dequeue();
     }
     
     moduleBusy = false;
@@ -539,15 +536,15 @@ function initRn2483() {
     logEvent(debug,"Entrée dans iniRn2483");
  
     /* Déclare les paramètres permettant de faire l'OTAA */
-    qMsgObj.enqueue(RN2483_SETDEVEUI_CMD);
-    qMsgObj.enqueue(RN2483_MACSETAPPEUI_CMD);
-    qMsgObj.enqueue(RN2483_SETAPPKEY_CMD);
+    qMsg.enqueue(RN2483_SETDEVEUI_CMD);
+    qMsg.enqueue(RN2483_MACSETAPPEUI_CMD);
+    qMsg.enqueue(RN2483_SETAPPKEY_CMD);
 
     /* Sauve la configuration */
-     qMsgObj.enqueue(RN2483_MACSAVE_CMD);
+    qMsg.enqueue(RN2483_MACSAVE_CMD);
   
     /* Fait le join sur le réseau */
-    qMsgObj.enqueue(RN2483_JOINOTAA_CMD);
+    qMsg.enqueue(RN2483_JOINOTAA_CMD);
   
     /* Indique que le module est configuré */
     moduleLoRaConfigured = true;
