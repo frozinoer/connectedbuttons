@@ -428,6 +428,12 @@ function LoRaSendAndReceive(commandeAT) {
        logEvent(debug, "Message mis à la poubelle");
        flashLed(LED_ROUGE, 50, 300);
        qMsg.dequeue();
+    } else if (d === "not_joined") {
+       // Le join n'a pas marché ou n'est pas encore accepté
+       logEvent(debug, "Réponse du rn2483 : not_joined");
+       flashLed(LED_ROUGE, 50, 300);
+       // Supprimer le message car on ne sait pas quand le join se fera
+       qMsg.dequeue();
     } else {
       logEvent(debug, "Réponse du rn2483 : " + d  + " pour : " + commandeAT);
       // Donnée de retour : valeur métier ou message d'erreur. Pas moyen de les distinguer. Dans ce cas on trash le message envoyé.
@@ -527,27 +533,23 @@ function wakeUpRn2483() {
 /**
  * Initialise le module RN2483 pour le rendre pret à recevoir des commande d'envoi et de réception LoRa. 
  Le module doit avoir suivi une procédure complete de réinitialisation avant de passe dans cette routine.
- A la sortie de cette routine, le module est dans l'état configuré et non busy. La ligne série associée est également initialisée. L'indicateur "moduleLoRaConfigured" indique si le module est bien configuré.
+ A la sortie de cette routine, le module est dans l'état configuré et non busy. La ligne série associée est également initialisée.
  */
-var moduleLoRaConfigured;
 
 function initRn2483() {
   
     logEvent(debug,"Entrée dans iniRn2483");
  
     /* Déclare les paramètres permettant de faire l'OTAA */
-    qMsg.enqueue(RN2483_SETDEVEUI_CMD);
-    qMsg.enqueue(RN2483_MACSETAPPEUI_CMD);
-    qMsg.enqueue(RN2483_SETAPPKEY_CMD);
+    qMsgObj.enqueue(RN2483_SETDEVEUI_CMD);
+    qMsgObj.enqueue(RN2483_MACSETAPPEUI_CMD);
+    qMsgObj.enqueue(RN2483_SETAPPKEY_CMD);
 
     /* Sauve la configuration */
-    qMsg.enqueue(RN2483_MACSAVE_CMD);
+    qMsgObj.enqueue(RN2483_MACSAVE_CMD);
   
     /* Fait le join sur le réseau */
-    qMsg.enqueue(RN2483_JOINOTAA_CMD);
-  
-    /* Indique que le module est configuré */
-    moduleLoRaConfigured = true;
+    qMsgObj.enqueue(RN2483_JOINOTAA_CMD);
 }
 
 /**
@@ -578,35 +580,27 @@ function checkBattery() {
 /* Pour une future version */
 
 
-
-
 /*********************************************************************************************
  *********************************************************************************************
  * Corps principal de l'application
  * 
  */
-
-
-var deviceState = "USINE";
-
 function onInit() {
   
+    USB.setConsole(true);
     moduleBusy = true;
-  
-    moduleLoRaConfigured = false;
     
     LOGGING_LEVEL=debug;
     initLogger();
     
     logEvent(info, "************* Démarrage **************");
+    initialiseModuleSerialCom();
     turnOffBuzzer();
     turnOffLed(LED_ROUGE);
     turnOffLed(LED_VERTE);
 
-    digitalWrite(SERIAL_PINS.rx,true);
-    digitalWrite(SERIAL_PINS.tx,true);
-  
-    initialiseModuleSerialCom();
+    //digitalWrite(SERIAL_PINS.rx,true);
+    //digitalWrite(SERIAL_PINS.tx,true);
   
     digitalWrite(RESET,true);
     logEvent(debug,"Attend avant reset");
@@ -620,7 +614,7 @@ function onInit() {
           logEvent(info, "System started");
           moduleBusy = false;
           initRn2483();
-        }, 4000);
+        }, 3000);
       }, 500); 
     }, 3000);
   
