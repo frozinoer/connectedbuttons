@@ -461,6 +461,12 @@ var DEV_EUI = "0004A30B001A6946";
 var APP_EUI = "6D725A02F383A69B";
 var APP_KEY = "D2851A6CAA6739B35A42048FE2886AB2";
 
+/* Objenious 
+var DEV_EUI = "008000000000a933";
+var APP_EUI = "00800000f4c5282d";
+var APP_KEY = "4F826D59B8E3916A75C6394E68CF0A8B";
+*/
+
 /* Commandes pouvant etre utilisées dans les échanges avec le RN2483. */
 var RN2483_SYSFACTRST_CDM = "sys factoryRESET\r\n";
 var RN2483_RST_CMD = "sys reset\r\n";
@@ -544,6 +550,7 @@ function initRn2483() {
     qMsgObj.enqueue(RN2483_SETDEVEUI_CMD);
     qMsgObj.enqueue(RN2483_MACSETAPPEUI_CMD);
     qMsgObj.enqueue(RN2483_SETAPPKEY_CMD);
+    qMsgObj.enqueue(RN2483_MACSETPWIDX_CMD);
 
     /* Sauve la configuration */
     qMsgObj.enqueue(RN2483_MACSAVE_CMD);
