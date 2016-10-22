@@ -270,6 +270,44 @@ function convertToHex(str) {
     return hex;
 }
 
+var RN248Sleeping;
+
+/**
+ * Fonction de mis en sommeil (stop mode)
+ * 
+ */
+function sleepDevice() {
+    logEvent(debug, "Entrée dans sleepDevice");
+    // Indique que le module entre en sommeil. Plus aucun message ne peut être mis en queue    
+    RN248Sleeping = true;
+    // Met le module radio en sommeil
+    //LoRaSendAndReceive(RN2483_SLEEPON_CMD);
+  
+    // Mets Espruino en Stop mode
+    logEvent(debug, "Appel de setDeepSleep(1)");
+    setDeepSleep(1);
+
+}
+
+/** 
+ * Fonction de réveil du système
+ * L'Espruino a été réveillé par la pression d'une touche (GPIO watch)
+ * Il faut faire un break, reprogrammer la vitesse avec 0x55 et envoyer une commande test. 
+ */
+function awakeRN2483() {
+    // Fait un break
+    
+    // Ecrit 0x55 sur la liaison série
+  
+    // Attend 50 ms
+  
+    // ENvoie une commande de test
+  
+    // SI OK, alors on continue, sinon erreur et LED rouge
+    RN248Sleeping = false;
+}
+
+
 /******
 
 Queue.js
@@ -354,6 +392,14 @@ function Queue(worker) {
     var item = this.peek();
     if (item !== undefined) {
       logEvent(debug, "Une commande est à envoyer");
+      if (RN248Sleeping) {
+        // Réveiller le module
+        logEvent(debug, "Appel du réveil du RN2483");
+        awakeRN2483();
+        // Une fois pret, envoyer le message
+      } else {
+         logEvent(debug, "Le module RN2483 est bien réveillé");
+      }
       if (moduleBusy === false) {
         logEvent(debug, "Le module est libre");
         theWorker(item);
@@ -362,6 +408,7 @@ function Queue(worker) {
       }
     } else {
       logEvent(debug,"La queue est vide");
+      sleepDevice();
     }
   };
 }
@@ -407,6 +454,8 @@ function LoRaSendAndReceive(commandeAT) {
       if (commandeAT.slice(0,14) === "mac tx uncnf 1") {
         logEvent(debug,"send message detected");
         return cb;
+      } else if (commandeAT.slice(0,9) === "sys sleep") {
+        logEvent(debug,"Le stop mode a été quitté avec succès");
       }
       flashLed(LED_VERTE, 50, 300);
       qMsg.dequeue();
@@ -496,6 +545,7 @@ var RN2483_JOINOTAA_CMD = "mac join otaa\r\n";
 
 var RN2483_GETVER_CMD = "sys get ver\r\n";
 var RN2483_GETVDD_CMD = "sys get vdd\r\n";
+var RN2483_SLEEPON_CMD = "sys sleep 60000\r\n";
 var RN2483_GETHWEUI_CMD = "sys get hweui\r\n";
 var RN2483_GETDR_CMD = "mac get dr\r\n";
 var RN2483_GETCH_CMD = "mac get ch\r\n";
@@ -596,6 +646,7 @@ function onInit() {
   
     USB.setConsole(true);
     moduleBusy = true;
+    RN248Sleeping = false;
     
     LOGGING_LEVEL=debug;
     initLogger();
@@ -626,4 +677,5 @@ function onInit() {
     }, 3000);
   
     logEvent(debug, "Synchronous job ended");
+    setSleepIndicator(LED1);
 }
